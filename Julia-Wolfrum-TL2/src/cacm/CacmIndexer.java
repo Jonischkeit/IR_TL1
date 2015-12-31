@@ -12,8 +12,10 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Scanner;
+import java.util.regex.MatchResult;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -101,8 +103,74 @@ public class CacmIndexer {
 		writer.close(); // 4
 	}
 
-	// Do the indexing! (see exercise 4.1)
+	// Do the indexing! (see exercise 4.1)	
 	public void indexFile(File file) throws Exception {
+		System.out.println("Indexing " + file.getCanonicalPath());
+
+		Scanner scanner = new Scanner(file);		
+		String id = null;
+		String title = "";
+		String content = "";
+		
+		String currentKey = ".I";
+
+		while(scanner.hasNextLine()) {
+			String line = scanner.nextLine();
+			if (line.startsWith(".")) { // is a key
+				String key = line.substring(0, 2);
+				switch (key) {
+				case ".I":
+					if (id != null) {
+						Document document = new Document();
+						document.add(new StringField(ID, id.trim(), Field.Store.YES));
+						document.add(new TextField(TITLE, title.trim(), Field.Store.YES));
+						document.add(new TextField(CONTENT, content.trim(), Field.Store.YES));
+						writer.addDocument(document);
+					}
+					id = line.substring(3);
+					break;
+					
+				case ".T":
+					currentKey = ".T";
+					title = "";
+					break;
+					
+				case ".W":
+					currentKey = ".W";
+					content = "";
+					break;
+					
+				default:
+					currentKey = key;
+					break;
+				}
+			} else { // is not a key, but further lines
+				switch (currentKey) {
+				case ".T":
+					title += line;
+					break;
+					
+				case ".W":
+					content += line;
+					break;
+				}
+			}
+		} // done with the file
+		
+		scanner.close();
+		
+		if (id != null) {
+			Document document = new Document();
+			document.add(new StringField(ID, id.trim(), Field.Store.YES));
+			document.add(new TextField(TITLE, title.trim(), Field.Store.YES));
+			document.add(new TextField(CONTENT, content.trim(), Field.Store.YES));
+			writer.addDocument(document);
+		}
+	}
+	
+	
+	
+	public void indexFile1(File file) throws Exception {
 
 		System.out.println("Indexing " + file.getCanonicalPath());
 		
@@ -114,6 +182,7 @@ public class CacmIndexer {
 		
 		// TextField: A field that is indexed and tokenized, without term vectors. For example this would be used on a 'body' field, that contains the bulk of a document's text.
 		// StringField: A field that is indexed but not tokenized: the entire String value is indexed as a single token. For example this might be used for a 'country' field or an 'id' field, or any field that you intend to use for sorting or access through the field cache.
+		
 		
 		while(reader.hasNextLine()){
 			String line = reader.nextLine();
@@ -163,7 +232,7 @@ public class CacmIndexer {
 				if(null == currentValue) break;
 				
 				// In case the Previous line did not end with an whitespace.
-				// To make sure, that words are not combined by accident to a ne word.
+				// To make sure, that words are not combined by accident to a new word.
 				currentValue.append(" ");
 				currentValue.append(line);
 			}
@@ -172,6 +241,8 @@ public class CacmIndexer {
 		
 		finishCurrentDokument(currentDoc, currentFieldType, currentValue);
 		writer.addDocument(currentDoc);
+		reader.close();
+		
 	}
 
 	private void finishPreviousField(Document doc, String currentFieldType,
