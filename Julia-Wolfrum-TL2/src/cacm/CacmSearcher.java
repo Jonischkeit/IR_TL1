@@ -80,14 +80,18 @@ public class CacmSearcher {
 		StringBuilder builder = new StringBuilder();
 		
 		int LIMIT = 1000; // limit to 1000 hits
-		boolean DEBUG = true; // for a debug output to the console
-				
-		MultiFieldQueryParser queryParser = new MultiFieldQueryParser(new String[]{"title", "content"}, analyzer);
+		boolean DEBUG = false; // for a debug output to the console
 		
+		if (DEBUG) {
+			System.out.println(indexDir);
+		}		
+						
 		Directory directory = FSDirectory.open(new File(indexDir).toPath());
 		IndexReader indexReader = DirectoryReader.open(directory);
 		IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 		indexSearcher.setSimilarity(sim);
+		
+		MultiFieldQueryParser queryParser = new MultiFieldQueryParser(new String[]{"title", "content"}, analyzer);
 		
 		for (TestQuery testQuery : queryList) {
 			Query query = queryParser.parse(testQuery.getText()); 
@@ -98,7 +102,7 @@ public class CacmSearcher {
 				rank++;
 				Document doc = indexSearcher.doc(scoreDoc.doc); 
 				String returnString = testQuery.getNumber() + " 1 " + doc.get("docid") + " " + rank + " " + scoreDoc.score + " " + sim.toString();
-				builder.append(returnString+"\n");
+				builder.append(returnString + "\n");
 				if (DEBUG) {
 					System.out.println(returnString);
 				}
