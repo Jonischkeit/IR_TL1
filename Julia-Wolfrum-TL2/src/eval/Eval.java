@@ -44,12 +44,51 @@ public class Eval {
 
 	/*
 	 * Berechnet MAP.
-	 */
+	 */	
 	protected static double evaluateMAP(String filename,
 			Map<String, Set<String>> groundtruth) {
-
+		
 		// TODO Hier bitte implementieren und korrekten Wert zurueckgeben.
-		return 0D;
+		
+		// https://www.eecis.udel.edu/~hfang/lucene/Lucene_exp.pdf
+
+		List<String> lines = null;
+		try {
+			lines = Files.readAllLines(new File(filename).toPath());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		Map<String, RecallPrecision> precisionForQueryID = new HashMap<String, RecallPrecision>();
+
+		for (String line : lines) {
+			String[] parts = line.split(" ");
+			if (parts.length < 5) {
+				throw new RuntimeException("Fehler" + parts.length);
+			}
+			
+			String queryID = parts[0];
+			String documentID = parts[2];
+						
+			if (!precisionForQueryID.containsKey(queryID)) {
+				precisionForQueryID.put(queryID, new RecallPrecision());
+			} 
+			
+			Set<String> relevantDocumentsForQueryID = groundtruth.get(queryID);
+			if (relevantDocumentsForQueryID != null) {
+				boolean isRelevant = relevantDocumentsForQueryID.contains(documentID);
+				precisionForQueryID.get(queryID).addDocument(isRelevant);
+			} 
+		}
+		
+	 
+		Set<String> allQueryIDs = groundtruth.keySet();
+		double MAP = 0.0;
+		for (String queryID : allQueryIDs ) {
+			MAP += precisionForQueryID.get(queryID).calculatePrecision();
+		}
+		 
+		return MAP/allQueryIDs.size();
 	}
 
 	/*
@@ -88,3 +127,34 @@ public class Eval {
 	}
 
 }
+
+
+// helper class for recall and precision
+class RecallPrecision { 
+	  private int numberOfReturnedRelevantDocument = 0; 
+	  private int numberOfReturnedDocument = 0; 
+	  
+	  void addDocument(boolean isRelevant) {
+		  numberOfReturnedDocument += 1;
+		  if (isRelevant) {
+			  numberOfReturnedRelevantDocument += 1;
+		  }
+	  }
+	  
+	  double calculatePrecision() {
+		  try {
+			  return (double)numberOfReturnedRelevantDocument / (double)numberOfReturnedDocument;
+		  } catch (ArithmeticException e) {
+			  System.out.println("exception");
+			  return (double)0.0;
+		  }
+	  }
+	  
+	  double calculateRecall() {
+		  try {
+			  return (double)numberOfReturnedDocument / (double)numberOfReturnedRelevantDocument;
+		  } catch (ArithmeticException e) {
+			  return (double)0.0;
+		  }
+	  }
+} 
