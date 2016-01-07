@@ -155,17 +155,17 @@ public class CacmIndexer {
 					break;
 				}
 			}
+			if (id != null) {
+				Document document = new Document();
+				document.add(new StringField(ID, id.trim(), Field.Store.YES));
+				document.add(new TextField(TITLE, title.trim(), Field.Store.YES));
+				document.add(new TextField(CONTENT, content.trim(), Field.Store.YES));
+				writer.addDocument(document);
+				id = null;
+			}
 		} // done with the file
 		
 		scanner.close();
-		
-		if (id != null) {
-			Document document = new Document();
-			document.add(new StringField(ID, id.trim(), Field.Store.YES));
-			document.add(new TextField(TITLE, title.trim(), Field.Store.YES));
-			document.add(new TextField(CONTENT, content.trim(), Field.Store.YES));
-			writer.addDocument(document);
-		}
 	}
 	
 	
