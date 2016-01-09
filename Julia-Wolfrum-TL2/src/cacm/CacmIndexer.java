@@ -162,6 +162,16 @@ public class CacmIndexer {
 				}
 			}
 		} // done with the file
+		
+		if (id != null) {
+			Document document = new Document();
+			Reader stringReaderTitle = new StringReader(title.trim());
+			Reader stringReaderContent = new StringReader(content.trim());
+			document.add(new StringField(ID, id.trim(), Field.Store.YES));
+			document.add(new TextField(TITLE, stringReaderTitle)); 
+			document.add(new TextField(CONTENT, stringReaderContent));
+			writer.addDocument(document);
+		}
 
 		scanner.close();
 	}
