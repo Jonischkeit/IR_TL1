@@ -64,7 +64,7 @@ public class Eval {
 		for (String line : lines) {
 			String[] parts = line.split(" ");
 			if (parts.length < 5) {
-				throw new RuntimeException("Fehler" + parts.length);
+				throw new RuntimeException("Error: Not long enhough" + parts.length);
 			}
 			
 			String queryID = parts[0];

@@ -14,12 +14,15 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.Scanner;
 import java.util.regex.MatchResult;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
@@ -27,6 +30,7 @@ import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Version;
 
 //Indexing
 public class CacmIndexer {
@@ -61,7 +65,6 @@ public class CacmIndexer {
 
 	// main method for testing
 	public static void main(String[] args) throws Exception {
-
 		String indexDir = null;// 1
 		String dataDir = "data/cacm.all"; // 2
 
@@ -122,22 +125,25 @@ public class CacmIndexer {
 				case ".I":
 					if (id != null) {
 						Document document = new Document();
+						Reader stringReaderTitle = new StringReader(title.trim());
+						Reader stringReaderContent = new StringReader(content.trim());
 						document.add(new StringField(ID, id.trim(), Field.Store.YES));
-						document.add(new TextField(TITLE, title.trim(), Field.Store.YES));
-						document.add(new TextField(CONTENT, content.trim(), Field.Store.YES));
+						document.add(new TextField(TITLE, stringReaderTitle)); 
+						document.add(new TextField(CONTENT, stringReaderContent));
 						writer.addDocument(document);
+						id = null;
 					}
 					id = line.substring(3);
 					break;
 					
 				case ".T":
 					currentKey = ".T";
-					title = "";
+					title = ""; // reset
 					break;
 					
 				case ".W":
 					currentKey = ".W";
-					content = "";
+					content = "";  // reset
 					break;
 					
 				default:
@@ -155,110 +161,8 @@ public class CacmIndexer {
 					break;
 				}
 			}
-			if (id != null) {
-				Document document = new Document();
-				document.add(new StringField(ID, id.trim(), Field.Store.YES));
-				document.add(new TextField(TITLE, title.trim(), Field.Store.YES));
-				document.add(new TextField(CONTENT, content.trim(), Field.Store.YES));
-				writer.addDocument(document);
-				id = null;
-			}
 		} // done with the file
-		
+
 		scanner.close();
-	}
-	
-	
-	
-	public void indexFile1(File file) throws Exception {
-
-		System.out.println("Indexing " + file.getCanonicalPath());
-		
-		Scanner reader = new Scanner(file);
-		Document currentDoc = null;
-		
-		String currentFieldType = null;
-		StringBuffer currentValue = null;
-		
-		// TextField: A field that is indexed and tokenized, without term vectors. For example this would be used on a 'body' field, that contains the bulk of a document's text.
-		// StringField: A field that is indexed but not tokenized: the entire String value is indexed as a single token. For example this might be used for a 'country' field or an 'id' field, or any field that you intend to use for sorting or access through the field cache.
-		
-		
-		while(reader.hasNextLine()){
-			String line = reader.nextLine();
-			line = line.trim();
-			if(line.startsWith(".I")){
-				finishCurrentDokument(currentDoc, currentFieldType, currentValue);
-				if(null != currentDoc){
-					writer.addDocument(currentDoc);
-				}
-				currentFieldType = null;
-				currentValue = null;
-				currentDoc = new Document();
-				
-				String value = line.split(" ")[1];
-				IndexableField docId = new StringField(ID, value, Store.YES);
-				currentDoc.add(docId);
-			}
-			else switch(line){
-			
-			// Title
-			case ".T": {
-				finishPreviousField(currentDoc, currentFieldType, currentValue);
-				currentFieldType = TITLE;
-				currentValue = new StringBuffer();
-				break;
-			} 
-			// Documents
-			case ".W":{
-				finishPreviousField(currentDoc, currentFieldType, currentValue);
-				currentFieldType = CONTENT;
-				currentValue = new StringBuffer();
-				break;
-			}
-			// Parts to Ignore
-			case ".B":
-			case ".A":
-			case ".N":
-			case ".X": {
-				// Ignore those Parts, but finish the Previous Field
-				finishPreviousField(currentDoc, currentFieldType, currentValue);
-				currentFieldType = null;
-				currentValue = null;
-				break;
-			}
-			// Content
-			default: {
-				if(null == currentValue) break;
-				
-				// In case the Previous line did not end with an whitespace.
-				// To make sure, that words are not combined by accident to a new word.
-				currentValue.append(" ");
-				currentValue.append(line);
-			}
-			}
-		}
-		
-		finishCurrentDokument(currentDoc, currentFieldType, currentValue);
-		writer.addDocument(currentDoc);
-		reader.close();
-		
-	}
-
-	private void finishPreviousField(Document doc, String currentFieldType,
-			StringBuffer currentValue) {
-		if(null == currentFieldType && null == currentValue) return;
-		String value = currentValue.toString();
-		
-		// Reduce double whitespaces to one. That may come by the art of reading the Document
-		value = value.replace("  ", " ");
-		value = value.trim();
-		IndexableField field = new TextField(currentFieldType, value, Store.YES);
-		doc.add(field);
-	}
-
-	private void finishCurrentDokument(Document doc,
-			String currentFieldType, StringBuffer currentValue) {
-		finishPreviousField(doc, currentFieldType, currentValue);
 	}
 }
