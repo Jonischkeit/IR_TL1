@@ -116,7 +116,6 @@ public class CacmIndexer {
 		String content = "";
 		
 		String currentKey = ".I";
-
 		while(scanner.hasNextLine()) {
 			String line = scanner.nextLine();
 			if (line.startsWith(".")) { // is a key
@@ -172,7 +171,7 @@ public class CacmIndexer {
 			document.add(new TextField(CONTENT, stringReaderContent));
 			writer.addDocument(document);
 		}
-
+		
 		scanner.close();
 	}
 }
