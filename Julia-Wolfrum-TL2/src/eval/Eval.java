@@ -60,6 +60,7 @@ public class Eval {
 		}
 		
 		Map<String, RecallPrecision> precisionForQueryID = new HashMap<String, RecallPrecision>();
+		Map<String, AveragePrecision> averagePrecisionForQueryID = new HashMap<String, AveragePrecision>();
 
 		for (String line : lines) {
 			String[] parts = line.split(" ");
@@ -73,19 +74,26 @@ public class Eval {
 			if (!precisionForQueryID.containsKey(queryID)) {
 				precisionForQueryID.put(queryID, new RecallPrecision());
 			} 
-			
-			Set<String> relevantDocumentsForQueryID = groundtruth.get(queryID);
-			if (relevantDocumentsForQueryID != null) {
-				boolean isRelevant = relevantDocumentsForQueryID.contains(documentID);
-				precisionForQueryID.get(queryID).addDocument(isRelevant);
+			if (!averagePrecisionForQueryID.containsKey(queryID)) {
+				averagePrecisionForQueryID.put(queryID, new AveragePrecision());
 			} 
+						
+			DocumentStatus relevance = DocumentStatus.NotFound; 
+			if (groundtruth.get(queryID) != null) { // a not found document is not relevant
+				relevance = groundtruth.get(queryID).contains(documentID) ? DocumentStatus.Relevant : DocumentStatus.NotRelevant;
+			} 
+			
+			RecallPrecision precision =  precisionForQueryID.get(queryID);
+			precision.addDocument(relevance == DocumentStatus.Relevant);
+
+			averagePrecisionForQueryID.get(queryID).update(precision, relevance);
 		}
-		
 	 
-		Set<String> allQueryIDs = groundtruth.keySet();
+		Set<String> allQueryIDs = precisionForQueryID.keySet(); // is the same as averagePrecisionForQueryID.keySet();
 		double MAP = 0.0;
 		for (String queryID : allQueryIDs ) {
-			MAP += precisionForQueryID.get(queryID).calculatePrecision();
+			AveragePrecision averagePrecision = averagePrecisionForQueryID.get(queryID);
+			MAP += averagePrecision.calculate();
 		}
 		 
 		return MAP/allQueryIDs.size();
@@ -131,30 +139,61 @@ public class Eval {
 
 // helper class for recall and precision
 class RecallPrecision { 
-	  private int numberOfReturnedRelevantDocument = 0; 
-	  private int numberOfReturnedDocument = 0; 
-	  
-	  void addDocument(boolean isRelevant) {
-		  numberOfReturnedDocument += 1;
-		  if (isRelevant) {
-			  numberOfReturnedRelevantDocument += 1;
-		  }
-	  }
-	  
-	  double calculatePrecision() {
-		  try {
-			  return (double)numberOfReturnedRelevantDocument / (double)numberOfReturnedDocument;
-		  } catch (ArithmeticException e) {
-			  System.out.println("exception");
-			  return (double)0.0;
-		  }
-	  }
-	  
-	  double calculateRecall() {
-		  try {
-			  return (double)numberOfReturnedDocument / (double)numberOfReturnedRelevantDocument;
-		  } catch (ArithmeticException e) {
-			  return (double)0.0;
-		  }
-	  }
+    private int numberOfReturnedRelevantDocuments = 0; 
+    private int numberOfReturnedDocuments = 0; 
+
+    void addDocument(boolean isRelevant) {
+        numberOfReturnedDocuments += 1;
+        if (isRelevant) {
+            numberOfReturnedRelevantDocuments += 1;
+        }
+    }
+
+    double calculatePrecision() {
+        if (numberOfReturnedDocuments < 1) {
+            return 0.0;
+        } else {
+        	return (double)numberOfReturnedRelevantDocuments / (double)numberOfReturnedDocuments;
+        }
+    }
+
+    double calculateRecall() {
+        if (numberOfReturnedRelevantDocuments < 1) {
+        	return 0.0;
+        } else {
+        	return (double)numberOfReturnedDocuments / (double)numberOfReturnedRelevantDocuments;
+        } 
+    }
 } 
+
+enum DocumentStatus {
+	Relevant,
+	NotRelevant,
+	NotFound
+}
+
+
+class AveragePrecision {
+	private double sumOfPrecision = 0.0; // sum of precision value obtained after every relevant document is retrieved
+	private int numberOfRelevantDocuments = 0;
+	
+	void update(RecallPrecision precision, DocumentStatus relevance) {
+		if (relevance == DocumentStatus.Relevant) {
+			sumOfPrecision += precision.calculatePrecision();
+			numberOfRelevantDocuments++;
+		} else if (relevance == DocumentStatus.NotFound) {
+			sumOfPrecision += 0.0; // see forum: When a relevant document is not retrieved at all, the precision value in the above equation is taken to be 0.
+			numberOfRelevantDocuments++;
+		}
+	}
+	
+	double calculate() {
+		if (numberOfRelevantDocuments < 1) {
+			return 0.0;
+		} else {
+			return sumOfPrecision/(double)numberOfRelevantDocuments;
+        } 
+	}
+}
+
+
