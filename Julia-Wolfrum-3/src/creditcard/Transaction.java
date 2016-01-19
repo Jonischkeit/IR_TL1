@@ -24,6 +24,16 @@ public class Transaction {
 		this.key = new Integer(idString).intValue();
 		this.value = new Integer(valString).intValue();
 	}
+	
+	/**
+	 * 
+	 * @param Expects the String to be in the form: "id;value"
+	 */
+	public Transaction(String summary){
+		String[] split = summary.split(";");
+		key = Integer.parseInt(split[0]);
+		value = Integer.parseInt(split[1]);
+	}
 
 	/**
 	 * Returns key.

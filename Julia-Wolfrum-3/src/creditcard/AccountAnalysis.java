@@ -3,7 +3,12 @@ package creditcard;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.IntSummaryStatistics;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AccountAnalysis {
@@ -33,7 +38,17 @@ public class AccountAnalysis {
 		// result map
 		Map<Integer, Integer> result = null;
 		
-		//TODO hier bitte implementieren
+		result = lines
+				.map(e -> new Transaction(e)) // Konvertiere in gut zu bearbeitende Paare (Grundprozess Schritt: Map-Phase, Seite 38)
+				.filter(e -> e.getKey()>=1505 && e.getKey()<=1510) // Filter, wie in der aufgabenstellung. Nur die Nummern 1505 bis 1510
+				.filter(e -> e.getValue()>=100) // Filter wie in der Aufgabenstellung, keine Umsätze unter 100
+				.parallel()
+				.collect(
+						Collectors.groupingByConcurrent( // Schritt Schuffle. Alle paare mit dem gleichen Schlüssel werden somit Groupiert
+								Transaction::getKey, 
+								Collectors.summingInt(Transaction::getValue))  // Schritt Reduce (aufsummieren aller werte der Transaktionen mit dem gleichen key)
+						)
+				;
 		
 		// close stream
 		lines.close();
