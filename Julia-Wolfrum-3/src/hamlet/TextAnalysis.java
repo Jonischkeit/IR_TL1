@@ -5,7 +5,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,11 +66,16 @@ public class TextAnalysis {
 
 	// Main method for testing
 	public static void main(String[] args) {
+		boolean aufgabeB = false;
+		
 		TextAnalysis ta = new TextAnalysis();
 
 		Map<String, Long> words = null;
 		try {
-			words = ta.analysis("hamlet-utf8.txt");
+			if(aufgabeB)
+				words = ta.analysis("hamlet-utf8.txt");
+			else 
+				words = ta.analysis2("hamlet-utf8.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -101,6 +109,27 @@ public class TextAnalysis {
 		// print time
 		System.out.println("time taken: "
 				+ (System.currentTimeMillis() - start));
+		
+		return result;
+	}
+	
+	public Map<String, Long> analysis2(String filepath) throws IOException{
+		Map<String, Long> words = analysis(filepath);
+		LinkedHashMap<String, Long> result = new LinkedHashMap<String, Long>();
+		
+		
+		words.entrySet()
+			.stream()
+			.sorted(new Comparator<Entry<String, Long>>() {
+
+				@Override
+				public int compare(Entry<String, Long> o1,
+						Entry<String, Long> o2) {
+					return o1.getValue().compareTo(o2.getValue())*-1; // -1 um die Werte absteigend zu sortieren
+				}
+
+			})
+			.forEach(e -> result.put(e.getKey(), e.getValue()));
 		
 		return result;
 	}
