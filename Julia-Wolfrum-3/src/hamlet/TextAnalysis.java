@@ -1,9 +1,13 @@
 package hamlet;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TextAnalysis {
@@ -73,16 +77,24 @@ public class TextAnalysis {
 	public Map<String, Long> analysis(String filepath) throws IOException {
 		
 		// create stream from file
-		Stream<String> lines = Files.lines(Paths.get(filepath));
+		Stream<String> lines = Files.lines(Paths.get(filepath), StandardCharsets.UTF_8);
 		
 		// capture time
 		long start = System.currentTimeMillis();
 		
 		// result map
-		Map<String, Long> words = null;
+		Map<String, Long> result = null;
 		
 		//TODO hier bitte implementieren
-
+		Stream<String> words = lines.flatMap(line -> Stream.of(line.split(" +"))); // Die lambda-Mapper-Funktion splittet eine Zeile in Arrays mit einzelnen Wörtern anhand des regulären Ausdrucks " +" (Leerzeichen) und erzeugt daraus wieder einen Stream 
+		result = words
+				.map(e -> e.replaceAll("[\\.\\!\\?\\;\\:\\,\"\\(\\)\\_]", "").toLowerCase()) // Satzzeichen entfernen; auf Kleinbuchstaben reduzieren
+				.filter(e -> e.length() >= 3) // nur Wörter mit mindesten 3 Buchstaben betrachten
+				.filter(e -> !e.matches(".*(\\[|\\]|(\\-\\-)|//).*")) // Wörter ausschließen, die mindestens eines der aufgeführten Zeichen enthalten
+				.filter(e -> !Arrays.asList(STOP_ARRAY).contains(e)) // enthält keine Stop-Worte
+				.parallel()
+				.collect(Collectors.groupingByConcurrent(Function.identity(), Collectors.<String> counting())); // Wort-Häufigkeiten
+		
 		// close stream
 		lines.close();
 		
@@ -90,6 +102,6 @@ public class TextAnalysis {
 		System.out.println("time taken: "
 				+ (System.currentTimeMillis() - start));
 		
-		return words;
+		return result;
 	}
 }

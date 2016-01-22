@@ -1,13 +1,11 @@
 package creditcard;
 
+import hamlet.TextAnalysis;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.IntSummaryStatistics;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,6 +23,18 @@ public class AccountAnalysis {
 			e.printStackTrace();
 		}
 		System.out.println("Ergebnis: " + result);
+		
+		TextAnalysis tanalysis = new TextAnalysis();
+		
+		Map<String, Long> tresult = null;
+		
+		try {
+			tresult = tanalysis.analysis("hamlet-utf8.txt");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println("Ergebnis: " + tresult);
 	}
 
 	public Map<Integer, Integer> mapFilterReduceBankAccount(String filepath) throws IOException {
@@ -41,10 +51,10 @@ public class AccountAnalysis {
 		result = lines
 				.map(e -> new Transaction(e)) // Konvertiere in gut zu bearbeitende Paare (Grundprozess Schritt: Map-Phase, Seite 38)
 				.filter(e -> e.getKey()>=1505 && e.getKey()<=1510) // Filter, wie in der aufgabenstellung. Nur die Nummern 1505 bis 1510
-				.filter(e -> e.getValue()>=100) // Filter wie in der Aufgabenstellung, keine Umsätze unter 100
+				.filter(e -> e.getValue()>=100) // Filter wie in der Aufgabenstellung, keine UmsÃ¤tze unter 100
 				.parallel()
 				.collect(
-						Collectors.groupingByConcurrent( // Schritt Schuffle. Alle paare mit dem gleichen Schlüssel werden somit Groupiert
+						Collectors.groupingByConcurrent( // Schritt Shuffle. Alle paare mit dem gleichen SchlÃ¼ssel werden somit Groupiert
 								Transaction::getKey, 
 								Collectors.summingInt(Transaction::getValue))  // Schritt Reduce (aufsummieren aller werte der Transaktionen mit dem gleichen key)
 						)
