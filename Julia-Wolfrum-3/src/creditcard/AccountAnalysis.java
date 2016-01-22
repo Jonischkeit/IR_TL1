@@ -1,7 +1,5 @@
 package creditcard;
 
-import hamlet.TextAnalysis;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -23,18 +21,6 @@ public class AccountAnalysis {
 			e.printStackTrace();
 		}
 		System.out.println("Ergebnis: " + result);
-		
-		TextAnalysis tanalysis = new TextAnalysis();
-		
-		Map<String, Long> tresult = null;
-		
-		try {
-			tresult = tanalysis.analysis("hamlet-utf8.txt");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.out.println("Ergebnis: " + tresult);
 	}
 
 	public Map<Integer, Integer> mapFilterReduceBankAccount(String filepath) throws IOException {

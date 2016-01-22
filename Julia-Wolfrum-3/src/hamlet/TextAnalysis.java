@@ -66,7 +66,7 @@ public class TextAnalysis {
 
 	// Main method for testing
 	public static void main(String[] args) {
-		boolean aufgabeB = false;
+		boolean aufgabeB = true;
 		
 		TextAnalysis ta = new TextAnalysis();
 
@@ -96,9 +96,9 @@ public class TextAnalysis {
 		//TODO hier bitte implementieren
 		Stream<String> words = lines.flatMap(line -> Stream.of(line.split(" +"))); // Die lambda-Mapper-Funktion splittet eine Zeile in Arrays mit einzelnen Wörtern anhand des regulären Ausdrucks " +" (Leerzeichen) und erzeugt daraus wieder einen Stream 
 		result = words
-				.map(e -> e.replaceAll("[\\.\\!\\?\\;\\:\\,\"\\(\\)\\_]", "").toLowerCase()) // Satzzeichen entfernen; auf Kleinbuchstaben reduzieren
+				.map(e -> e.replaceAll("[\\.\\!\\?\\;\\:\\,\"\\(\\)]", "").toLowerCase()) // Satzzeichen entfernen; auf Kleinbuchstaben reduzieren
 				.filter(e -> e.length() >= 3) // nur Wörter mit mindesten 3 Buchstaben betrachten
-				.filter(e -> !e.matches(".*(\\[|\\]|(\\-\\-)|//).*")) // Wörter ausschließen, die mindestens eines der aufgeführten Zeichen enthalten
+				.filter(e -> !e.matches(".*(\\[|\\]|(\\-\\-)|//|\\_).*")) // Wörter ausschließen, die mindestens eines der aufgeführten Zeichen enthalten
 				.filter(e -> !Arrays.asList(STOP_ARRAY).contains(e)) // enthält keine Stop-Worte
 				.parallel()
 				.collect(Collectors.groupingByConcurrent(Function.identity(), Collectors.<String> counting())); // Wort-Häufigkeiten
